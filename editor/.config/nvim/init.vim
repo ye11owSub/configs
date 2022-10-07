@@ -1,16 +1,59 @@
+set encoding=UTF-8
 set backspace=indent,eol,start
-" set the runtime path to include Vundle and initialize
+
+" Permanent undo
+set undodir=~/.nvimdid
+set undofile
+
+"vim theme
+set bg=dark
+set colorcolumn=80
+set cursorline
+set relativenumber " Relative line numbers
+set nu
+
+" Quick-save
+nmap <leader>w :w<CR>
+"
+" Completion
+" Better completion
+" menuone: popup even when there's only one match
+" noinsert: Do not insert text until a selection is made
+" noselect: Do not select, force user to select one from the menu
+set completeopt=menuone,noinsert,noselect
+" Better display for messages
+set cmdheight=2
+" You will have bad experience for diagnostic messages when it's default 4000.
+set updatetime=1000
+
+
+" Proper search
+set incsearch
+set ignorecase
+set smartcase
+set gdefault
+
+
+" Move by line
+nnoremap j gj
+nnoremap k gk
 
 call plug#begin('~/.vim/plugged')
-"dirtree
+
+" Dirtree
 Plug 'scrooloose/nerdtree'
 Plug 'jistr/vim-nerdtree-tabs'
+let g:tagbar_left = 1
+let g:tagbar_vertical = 25
+let NERDTreeWinPos = 'left'
+map <C-n> <plug>NERDTreeTabsToggle<CR>
+let NERDTreeIgnore=['\.pyc$', '\~$'] "ignore files in NERDTree
 
 
-" VIM enhancements
-"Plug 'ciaranm/securemodelines'
-"Plug 'editorconfig/editorconfig-vim'
-"Plug 'justinmk/vim-sneak'
+" Ctrl+h to stop searching
+vnoremap <C-h> :nohlsearch<cr>
+nnoremap <C-h> :nohlsearch<cr>
+
 
 " GUI enhancements
 Plug 'itchyny/lightline.vim'
@@ -23,25 +66,36 @@ Plug 'airblade/vim-rooter'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
 
+Plug 'nvim-lua/plenary.nvim'
+Plug 'nvim-telescope/telescope.nvim', { 'tag': '0.1.0' }
+Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'make' }
+
 " Semantic language support
 Plug 'neovim/nvim-lspconfig'
 Plug 'nvim-lua/lsp_extensions.nvim'
-Plug 'nvim-lua/completion-nvim'
-
-" Syntactic language support
-Plug 'cespare/vim-toml'
-Plug 'stephpy/vim-yaml'
-Plug 'rust-lang/rust.vim'
-Plug 'rhysd/vim-clang-format'
-
-"Auto-Indentation"
-"Plug 'vim-scripts/indentpython.vim'
+Plug 'hrsh7th/nvim-cmp'
+Plug 'hrsh7th/cmp-nvim-lsp'
+Plug 'saadparwaiz1/cmp_luasnip'
+Plug 'L3MON4D3/LuaSnip'
+" Plug 'nvim-lua/completion-nvim'
 
 "vim theme
-Plug 'morhetz/gruvbox'
+Plug 'dracula/vim'
+Plug 'ryanoasis/vim-devicons'
+Plug 'Xuyuanp/nerdtree-git-plugin'
+
 call plug#end()
+colorscheme dracula
 
 
+" Telescope bindings
+nnoremap ,f <cmd>Telescope find_files<cr>
+nnoremap ,g <cmd>Telescope live_grep<cr>
+nnoremap ,b <cmd>Telescope buffers<cr>
+nnoremap ,h <cmd>Telescope help_tags<cr>
+" Open hotkeys
+map <C-p> :Files<CR>
+nmap <leader>; :Buffers<CR>
 
 " LSP configuration
 lua << END
@@ -73,7 +127,7 @@ local on_attach = function(client, bufnr)
   buf_set_keymap("n", "<space>f", "<cmd>lua vim.lsp.buf.formatting()<CR>", opts)
 
   -- Forward to other plugins
-  require'completion'.on_attach(client)
+  -- no needed anymore require'completion'.on_attach(client)
 end
 
 local servers = { 'pyright', 'rust_analyzer' }
@@ -93,7 +147,38 @@ vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(
     update_in_insert = true,
   }
 )
+
+-- nvim-cmp setup
+local cmp = require 'cmp'
+cmp.setup {
+  completion = {
+    autocomplete = false
+  },
+  snippet = {
+    expand = function(args)
+      require('luasnip').lsp_expand(args.body)
+    end,
+  },
+  mapping = {
+    ['<C-p>'] = cmp.mapping.select_prev_item(),
+    ['<C-n>'] = cmp.mapping.select_next_item(),
+    ['<C-d>'] = cmp.mapping.scroll_docs(-4),
+    ['<C-f>'] = cmp.mapping.scroll_docs(4),
+    ['<C-/>'] = cmp.mapping.complete(),
+    ['<C-e>'] = cmp.mapping.close(),
+    ['<CR>'] = cmp.mapping.confirm {
+      behavior = cmp.ConfirmBehavior.Replace,
+      select = true,
+    },
+  },
+  sources = {
+    { name = 'nvim_lsp' },
+    { name = 'luasnip' },
+  },
+}
+
 END
+
 
 if executable('ag')
 	set grepprg=ag\ --nogroup\ --nocolor
@@ -133,92 +218,10 @@ syntax on
 map <C-p> :Files<CR>
 nmap <leader>; :Buffers<CR>
 
-" Quick-save
-nmap <leader>w :w<CR>
 
 " rust
 let g:rustfmt_autosave = 1
 let g:rustfmt_emit_files = 1
 let g:rustfmt_fail_silently = 0
 let g:rust_clip_command = 'xclip -selection clipboard'
-
-" Completion
-" Better completion
-" menuone: popup even when there's only one match
-" noinsert: Do not insert text until a selection is made
-" noselect: Do not select, force user to select one from the menu
-set completeopt=menuone,noinsert,noselect
-" Better display for messages
-set cmdheight=2
-" You will have bad experience for diagnostic messages when it's default 4000.
-set updatetime=300
-
-
-" Proper search
-set incsearch
-set ignorecase
-set smartcase
-set gdefault
-
-
-" Move by line
-nnoremap j gj
-nnoremap k gk
-
-" No arrow keys --- force yourself to use the home row
-"nnoremap <up> <nop>
-"nnoremap <down> <nop>
-"inoremap <up> <nop>
-"inoremap <down> <nop>
-"inoremap <left> <nop>
-"inoremap <right> <nop>
-
-" Left and right can switch buffers
-"nnoremap <left> :bp<CR>
-"nnoremap <right> :bn<CR>
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Use <Tab> and <S-Tab> to navigate through popup menu
-inoremap <expr> <Tab>   pumvisible() ? "\<C-n>" : "\<Tab>"
-inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
-
-" use <Tab> as trigger keys
-imap <Tab> <Plug>(completion_smart_tab)
-imap <S-Tab> <Plug>(completion_smart_s_tab)
-
-" Enable type inlay hints
-autocmd CursorHold,CursorHoldI *.rs :lua require'lsp_extensions'.inlay_hints{ only_current_line = true }
-
-" Use <TAB> for selections ranges.
-" nmap <silent> <TAB> <Plug>(coc-range-select)
-" xmap <silent> <TAB> <Plug>(coc-range-select)
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-" Ctrl+h to stop searching
-vnoremap <C-h> :nohlsearch<cr>
-nnoremap <C-h> :nohlsearch<cr>
-
-" dirtree
-let g:tagbar_left = 1
-let g:tagbar_vertical = 25
-let NERDTreeWinPos = 'left'
-map <C-n> <plug>NERDTreeTabsToggle<CR>
-let NERDTreeIgnore=['\.pyc$', '\~$'] "ignore files in NERDTree
-
-
-
-" Permanent undo
-set undodir=~/.nvimdid
-set undofile
-
-"vim theme
-let g:gruvbox_invert_selection=0
-set bg=dark
-set colorcolumn=80
-set cursorline
-set relativenumber " Relative line numbers
-set nu
-autocmd vimenter * ++nested colorscheme gruvbox
-filetype plugin indent on    " required
 
