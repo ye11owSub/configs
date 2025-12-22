@@ -64,7 +64,7 @@ Plug 'andymass/vim-matchup'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 
 "treesitter
-Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
+Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate', 'tag': 'v0.10.0' }
 
 "floaterm
 Plug 'voldikss/vim-floaterm'
@@ -92,6 +92,19 @@ Plug 'catppuccin/nvim', { 'as': 'catppuccin' }
 Plug 'dracula/vim'
 Plug 'ryanoasis/vim-devicons'
 "Plug 'Xuyuanp/nerdtree-git-plugin'
+
+"AI
+Plug 'yetone/avante.nvim'
+Plug 'zbirenbaum/copilot.lua'
+" AI-Deps
+Plug 'nvim-lua/plenary.nvim'
+Plug 'MunifTanjim/nui.nvim'
+Plug 'MeanderingProgrammer/render-markdown.nvim'
+
+" Optional deps
+Plug 'stevearc/dressing.nvim' " for enhanced input UI
+Plug 'folke/snacks.nvim' " for modern input UI
+
 
 call plug#end()
 
@@ -169,6 +182,9 @@ augroup mygroup
   " Setup formatexpr specified filetype(s)
   autocmd FileType typescript,json setl formatexpr=CocAction('formatSelected')
 augroup end
+
+"AI autocmd
+autocmd! User avante.nvim
 
 " Applying code actions to the selected code block
 " Example: `<leader>aap` for current paragraph
@@ -253,41 +269,16 @@ lua << END
 -- nvim-treesitter configuration
 require'nvim-treesitter.configs'.setup {
   -- A list of parser names, or "all" (the listed parsers MUST always be installed)
-  ensure_installed = { "c", "cpp", "cuda", "vim", "vimdoc", "query", "markdown", "markdown_inline", "python", "rust", "commonlisp", "cmake", "yaml", "toml", "sql", "java"},
   -- Install parsers synchronously (only applied to `ensure_installed`)
+  ensure_installed = { "c", "cpp", "cuda", "vim", "vimdoc", "query", "markdown", "markdown_inline", "python", "rust", "commonlisp", "cmake", "yaml", "toml", "sql", "java", "bash"},
   sync_install = false,
 
   -- Automatically install missing parsers when entering buffer
   -- Recommendation: set to false if you don't have `tree-sitter` CLI installed locally
   auto_install = true,
 
-  -- List of parsers to ignore installing (or "all")
-  ignore_install = { "javascript" },
-
-  ---- If you need to change the installation directory of the parsers (see -> Advanced Setup)
-  -- parser_install_dir = "/some/path/to/store/parsers", -- Remember to run vim.opt.runtimepath:append("/some/path/to/store/parsers")!
-
   highlight = {
     enable = true,
-
-    -- NOTE: these are the names of the parsers and not the filetype. (for example if you want to
-    -- disable highlighting for the `tex` filetype, you need to include `latex` in this list as this is
-    -- the name of the parser)
-    -- list of language that will be disabled
-    disable = { "c", "rust" },
-    -- Or use a function for more flexibility, e.g. to disable slow treesitter highlight for large files
-    disable = function(lang, buf)
-        local max_filesize = 100 * 1024 -- 100 KB
-        local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(buf))
-        if ok and stats and stats.size > max_filesize then
-            return true
-        end
-    end,
-
-    -- Setting this to true will run `:h syntax` and tree-sitter at the same time.
-    -- Set this to `true` if you depend on 'syntax' being enabled (like for indentation).
-    -- Using this option may slow down your editor, and you may see some duplicate highlights.
-    -- Instead of true it can also be a list of languages
     additional_vim_regex_highlighting = false,
   },
 }
@@ -317,6 +308,27 @@ require("noice").setup({
   },
 })
 
+-- AI
+require("copilot").setup({})
+require("avante").setup({
+  provider = "copilot",
+  providers = {
+    copilot = {
+      endpoint = "https://api.githubcopilot.com",
+      model="claude-sonnet-4",
+      allow_insecure = false,
+      timeout = 10 * 60 * 1000,
+      temperature = 0,
+      max_completion_tokens = 1000000,
+      reasoning_effort = "high",
+    },
+  },
+  behaviour = {
+    auto_approve_tool_permissions = false,
+  },
+})
+require("snacks").setup()
+
 END
 
 let g:floaterm_keymap_toggle = '<Leader>t'
@@ -328,3 +340,4 @@ if executable('rg')
 	set grepprg=rg\ --no-heading\ --vimgrep
 	set grepformat=%f:%l:%c:%m
 endif
+
